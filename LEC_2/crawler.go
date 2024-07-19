@@ -13,7 +13,7 @@ import (
 //
 // Serial crawler
 //
-
+// 串行爬取
 func Serial(url string, fetcher Fetcher, fetched map[string]bool) {
     if fetched[url] {
         return
@@ -33,12 +33,13 @@ func Serial(url string, fetcher Fetcher, fetched map[string]bool) {
 // Concurrent crawler with shared state and Mutex
 //
 
-type fetchState struct {
+type fetchState struct {    // 用于存储URLs是否已经访问过的状态，使用 sync.Mutex 锁以提供并行安全性
     mu      sync.Mutex
     fetched map[string]bool
 }
 
-func (fs *fetchState) testAndSet(url string) bool {
+// 测试并设置：查看某个url是否已经访问过（通过返回值bool），无论之前是否已经访问过，此次查看也会直接设置已访问（true）
+func (fs *fetchState) testAndSet(url string) bool { 
     fs.mu.Lock()
     defer fs.mu.Unlock()
     r := fs.fetched[url]
@@ -46,6 +47,7 @@ func (fs *fetchState) testAndSet(url string) bool {
     return r
 }
 
+// 使用 互斥锁 和 条件变量 进行并行爬取
 func ConcurrentMutex(url string, fetcher Fetcher, fs *fetchState) {
     if fs.testAndSet(url) {
         return
@@ -54,7 +56,7 @@ func ConcurrentMutex(url string, fetcher Fetcher, fs *fetchState) {
     if err != nil {
         return
     }
-    var done sync.WaitGroup
+    var done sync.WaitGroup // 用于存储协程数目，Wait()阻塞直到计数为0
     for _, u := range urls {
         done.Add(1)
         go func(u string) {
@@ -83,15 +85,16 @@ func worker(url string, ch chan []string, fetcher Fetcher) {
     }
 }
 
+// 协调同步函数
 func coordinator(ch chan []string, fetcher Fetcher) {
     n := 1
     fetched := make(map[string]bool)
-    for urls := range ch {
+    for urls := range ch {  // 依次从channel中获取协程传过来的urls
         for _, u := range urls {
             if fetched[u] == false {
                 fetched[u] = true
-                n += 1
-                go worker(u, ch, fetcher)
+                n += 1  
+                go worker(u, ch, fetcher)   // 继续递归地爬取
             }
         }
         n -= 1
@@ -101,6 +104,7 @@ func coordinator(ch chan []string, fetcher Fetcher) {
     }
 }
 
+// 使用 channel 实现并行爬取
 func ConcurrentChannel(url string, fetcher Fetcher) {
     ch := make(chan []string)
     go func() {
@@ -128,7 +132,7 @@ func main() {
 // Fetcher
 //
 
-type Fetcher interface {
+type Fetcher interface {    // 接口，输入为要访问的url，输出为该url中存在的其他urls数组和error
     // Fetch returns a slice of URLs found on the page.
     Fetch(url string) (urls []string, err error)
 }
@@ -136,10 +140,12 @@ type Fetcher interface {
 // fakeFetcher is Fetcher that returns canned results.
 type fakeFetcher map[string]*fakeResult
 
+// 虚拟爬取的结果：网页body，其他urls数组
 type fakeResult struct {
     body string
     urls []string
 }
+
 
 func (f fakeFetcher) Fetch(url string) ([]string, error) {
     if res, ok := f[url]; ok {

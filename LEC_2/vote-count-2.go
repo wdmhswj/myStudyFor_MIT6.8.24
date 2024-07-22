@@ -36,7 +36,7 @@ func main() {
 	} else {
 		println("lost")
 	}
-	mu.Unlock()
+	mu.Unlock()	// 对应前面for循环中break之前的mu.Lock()
 }
 
 func requestVote() bool {

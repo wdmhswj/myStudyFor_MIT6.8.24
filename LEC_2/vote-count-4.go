@@ -21,7 +21,7 @@ func main() {
 				count++
 			}
 			finished++
-			cond.Broadcast()
+			cond.Broadcast()	// 唤醒所有在条件变量等待的 goroutine
 		}()
 	}
 

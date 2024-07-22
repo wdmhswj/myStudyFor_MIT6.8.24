@@ -29,7 +29,7 @@ func main() {
 			break
 		}
 		mu.Unlock()
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)	// 睡眠一段时间，减少for循环忙等待
 	}
 	if count >= 5 {
 		println("received 5+ votes!")

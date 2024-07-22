@@ -1,3 +1,7 @@
+//
+// count 和 finished 不在作为共享变量 
+// 使用channel进行goroutine间的通信
+//
 package main
 
 import "time"
@@ -17,7 +21,7 @@ func main() {
 	for count < 5 && finished < 10 {
 		v := <-ch
 		if v {
-			count += 1
+			count += 1	
 		}
 		finished += 1
 	}
